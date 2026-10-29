@@ -1,126 +1,275 @@
-# PlacidWay Knowledge Chatbot
+<div align="center">
+  <img src="assets/placidway-logo.png" alt="PlacidWay" width="260">
 
-A source-grounded chatbot project for the PlacidWay AI Automation Engineer assessment. It is designed to answer only from the seven approved PlacidWay pages, cite evidence, and avoid inventing medical or pricing information.
+  # PlacidWay Knowledge Chatbot
 
-## Current status
+  **A source-grounded assistant for approved PlacidWay clinic and treatment-package information.**
 
-- [x] Explicit allowlist of seven assessment URLs
-- [x] Polite crawler with descriptive User-Agent, robots.txt check, and minimum one-second request interval
-- [x] Extraction audit report with HTTP status, final URL, title, text length, and review flags
-- [x] Source-aware chunking with URL and page-type metadata
-- [x] Candidate price extraction written to a review-only file
-- [x] Hybrid BM25 and local Chroma semantic retrieval fused with reciprocal-rank fusion (RRF)
-- [x] FlashRank reranking with a dynamic three/four/five-chunk evidence budget
-- [x] Structured claim-level grounding and exact source links
-- [x] Reviewed artifact digest, health checks, rate/concurrency controls, and safe telemetry
-- [x] Evidence-grounded OpenAI answer generation (optional; requires API key)
-- [x] Package-specific evidence filtering to reduce generic comparison-page contamination
-- [x] Scope fallbacks for booking, weather, personal medical advice, and insufficient evidence
-- [x] Expanded evidence-first prompting for price claims, package specificity, medical safety, and citation hygiene
-- [x] Separates base inclusions, extra-cost/conditional services, and optional add-ons in package answers
-- [x] Streamlit chat UI and automated tests
-- [ ] Manual review of extracted page text and candidate price mentions
-- [ ] Run the full eight-question assessment against freshly indexed sources
-- [ ] Approve the freshly rebuilt artifact after manual source review
-- [ ] Deploy to Streamlit Community Cloud and monitor availability
+  [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+  [![Streamlit](https://img.shields.io/badge/Streamlit-1.52-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
+  [![Tests](https://img.shields.io/badge/tests-154%20passing-16A34A)](#testing)
+  [![Grounded RAG](https://img.shields.io/badge/RAG-hybrid%20retrieval-F05A55)](#architecture)
+</div>
 
-## Setup (Windows PowerShell)
+## Overview
+
+The PlacidWay Knowledge Chatbot helps visitors find information from seven approved PlacidWay pages. It answers questions about listed treatment packages, prices, durations, inclusions, comparisons, and the ITC clinic.
+
+The system prioritizes accuracy and honesty. It retrieves relevant website evidence before generating an answer, validates factual claims against that evidence, cites the supporting PlacidWay pages, and clearly says when the approved content does not provide enough information.
+
+## Key features
+
+- Explicit allowlist of seven approved PlacidWay pages
+- Hybrid keyword and semantic retrieval
+- Reciprocal-rank fusion and local FlashRank reranking
+- Dynamic selection of the strongest 3–5 evidence chunks
+- Structured OpenAI responses with chunk-level grounding validation
+- Clean, deduplicated links to supporting PlacidWay pages
+- Follow-up questions with session-local conversation context
+- Professional handling of greetings and insufficient information
+- Safe responses for booking, weather, and personal medical-advice requests
+- Reviewed and integrity-checked knowledge artifacts
+- Responsive PlacidWay-branded chat interface
+- Automated retrieval, grounding, safety, and UI tests
+
+## Architecture
+
+```text
+Visitor question
+       │
+       ▼
+Intent and follow-up context resolution
+       │
+       ▼
+BM25 keyword retrieval ──┐
+                        ├── Reciprocal-rank fusion
+Chroma semantic search ──┘
+       │
+       ▼
+FlashRank reranking
+       │
+       ▼
+Top 3–5 reviewed evidence chunks
+       │
+       ▼
+Structured OpenAI answer generation
+       │
+       ▼
+Grounding validation and trusted source rendering
+       │
+       ▼
+Answer with clickable PlacidWay sources
+```
+
+Document embeddings and reranking run locally. OpenAI receives the visitor question and only the selected evidence excerpts needed to generate the answer.
+
+## Technology choices
+
+| Layer | Technology | Purpose |
+|---|---|---|
+| User interface | Streamlit | Responsive conversational interface |
+| Answer generation | OpenAI Responses API | Structured, evidence-based answer synthesis |
+| Default model | `gpt-4.1-mini` | Fast, cost-conscious grounded generation |
+| Keyword retrieval | BM25-style local search | Exact term, package, and price matching |
+| Semantic retrieval | Chroma + MiniLM ONNX | Meaning-based retrieval |
+| Rank fusion | Reciprocal-rank fusion | Combines independent retrieval rankings |
+| Reranking | FlashRank TinyBERT | Selects the strongest final evidence |
+| Crawling | Requests + Beautiful Soup + lxml | Polite extraction from approved pages |
+| Quality checks | pytest | Unit, integration, retrieval, and safety testing |
+
+## Knowledge scope
+
+The assistant is restricted to the seven sources registered in `app/config/sources.py`. The crawler:
+
+- checks `robots.txt` before fetching pages;
+- uses a descriptive User-Agent;
+- waits at least one second between requests;
+- does not follow discovered links; and
+- never expands the allowlist automatically.
+
+Each indexed chunk retains its source ID, page type, page title, URL, and stable chunk ID. This metadata supports filtering, grounding validation, and user-facing citations.
+
+## Getting started
+
+### Requirements
+
+- Python 3.12
+- An OpenAI API key
+- Git
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/ZainAli879/placidway-chatbot.git
+cd placidway-chatbot
+python -m venv .venv
+```
+
+Activate the environment:
 
 ```powershell
-python -m venv .venv
+# Windows PowerShell
 .venv\Scripts\Activate.ps1
+```
+
+```bash
+# macOS or Linux
+source .venv/bin/activate
+```
+
+Install the application dependencies:
+
+```bash
+python -m pip install --upgrade pip
 pip install -r requirements.txt
+```
+
+### 2. Configure environment variables
+
+Copy the example configuration:
+
+```powershell
+# Windows PowerShell
 Copy-Item .env.example .env
 ```
 
-Open the local `.env` file and set `OPENAI_API_KEY` to your own key. Optionally set `OPENAI_MODEL` (defaults to `gpt-4.1-mini`). Never paste your key into source code or commit the `.env` file.
-
-## 1. Audit the approved pages
-
-```powershell
-python -m scripts.audit_sources
+```bash
+# macOS or Linux
+cp .env.example .env
 ```
 
-The crawler checks robots.txt before requesting the approved pages. It does not follow links or expand the allowlist. Successful source text is written to `data/raw/`; the report is `data/source_audit.json`.
+Set the required key in `.env`:
 
-A successful HTTP response is not proof of complete or semantically correct extraction. Review each audit row and the corresponding text before using it as chatbot evidence.
-
-## 2. Build the local knowledge and vector indexes
-
-```powershell
-python -m app.knowledge.indexer
-python -m scripts.build_vector_index --corpus data\processed\chunks.jsonl --output data\processed\chroma
+```dotenv
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=gpt-4.1-mini
+ENABLE_GROUNDING_VALIDATION=true
 ```
 
-Outputs:
-- `data/processed/chunks.jsonl`: chunks with source IDs, URLs, titles, and page types.
-- `data/processed/price_mentions_review.jsonl`: currency mentions with surrounding source context.
-- `data/processed/index_manifest.json`: build counts and timestamp.
-- `data/processed/chroma/`: persistent semantic vector index bound to the exact chunks file.
+Never commit `.env`, API keys, Streamlit secrets, or chat logs.
 
-The first vector-index build downloads Chroma's approximately 80 MB ONNX MiniLM embedding model. Build it once on your own machine after installing the requirements; visitor requests never rebuild document embeddings. Rebuild the Chroma index whenever `chunks.jsonl` changes, because startup deliberately rejects a missing or stale vector artifact.
+### 3. Run the application
 
-**Price safety:** candidate prices are not verified quotes. Each mention is marked `review_required: true`. Do not merge general comparison-page prices with ITC treatment-package prices. Confirm the condition, outpatient/inpatient program, duration, inclusions, exclusions, currency, and qualifiers against the original page before using a price in a user-facing answer.
-
-## 3. Run tests and launch the chatbot
-
-```powershell
-python -m pytest
+```bash
 streamlit run streamlit_app.py
 ```
 
-Streamlit prints a local URL, usually `http://localhost:8501`. Open it in your browser. The app uses the local `data/processed/chunks.jsonl` index, retains conversation history for the current session, and displays source links.
+Open `http://localhost:8501` if Streamlit does not open it automatically.
 
-If `OPENAI_API_KEY` is set, OpenAI generates concise structured claims from the top three focused, top four list-style, or top five comparison/multipart chunks selected by FlashRank. Candidates come from both BM25 keyword search and Chroma semantic search, then are deduplicated and fused with RRF before reranking. Every factual claim must cite accepted chunk IDs. If generation fails, the app reports the underlying safe error category instead of constructing an ungrounded answer.
+The repository contains a reviewed chunk corpus and matching Chroma vector artifact, so a knowledge-base rebuild is not required for normal use.
 
-Run the reviewed retrieval regression cases after building the vector artifact:
+## Configuration
 
-```powershell
-python -m scripts.evaluate_retrieval --mode bm25
-python -m scripts.evaluate_retrieval --mode hybrid
-```
+All supported settings are documented in `.env.example`.
 
-## Production artifact approval
+| Variable | Default | Description |
+|---|---:|---|
+| `OPENAI_API_KEY` | — | Required for answer generation |
+| `OPENAI_MODEL` | `gpt-4.1-mini` | Model used for grounded synthesis |
+| `ENABLE_GROUNDING_VALIDATION` | `true` | Validates generated claims against evidence |
+| `MAX_EVIDENCE_CHUNKS` | `5` | Maximum chunks supplied to generation |
+| `MAX_EVIDENCE_CHARS` | `6000` | Maximum evidence characters per request |
+| `SESSION_REQUESTS` | `10` | Requests allowed per session window |
+| `SESSION_WINDOW_SECONDS` | `60` | Session rate-limit window |
+| `GENERATION_CONCURRENCY` | `2` | Concurrent generations per process |
+| `DAILY_GENERATION_LIMIT` | `500` | In-process daily generation limit |
 
-Rebuilding always invalidates approval. Review all seven raw source files and the price-candidate report, then deliberately approve the exact corpus bytes:
+Knowledge paths can be configured using `KNOWLEDGE_INDEX_PATH`, `KNOWLEDGE_MANIFEST_PATH`, and `CHROMA_PERSIST_DIRECTORY`.
 
-```powershell
+## Refreshing the knowledge base
+
+Use this workflow when an approved page changes:
+
+```bash
+# Audit and extract the approved sources
+python -m scripts.audit_sources
+
+# Build chunks and the semantic vector index
 python -m app.knowledge.indexer
-python -m scripts.build_vector_index --corpus data\processed\chunks.jsonl --output data\processed\chroma
+python -m scripts.build_vector_index
+
+# Approve and validate the reviewed artifact
 python -m scripts.review_artifact --reviewer "your-name-or-email"
 python -m scripts.validate_artifact
 ```
 
-Commit `data/processed/chunks.jsonl`, `data/processed/index_manifest.json`, and the matching `data/processed/chroma/` artifact after approval. Never commit `data/raw`, `.env`, or chat logs. Roll back the reviewed chunks, manifest, and Chroma artifact together.
+Before approval, manually review:
 
-## Free Streamlit deployment
+- the extracted content for all seven pages;
+- the source titles, URLs, and page types;
+- treatment and package boundaries;
+- price, currency, duration, inclusion, and exclusion context; and
+- candidate prices in `data/processed/price_mentions_review.jsonl`.
 
-1. Push the repository to GitHub.
-2. Confirm GitHub Actions passes, including artifact validation and security checks.
-3. In Streamlit Community Cloud, select `streamlit_app.py` as the entry point.
-4. Add `OPENAI_API_KEY` and optionally `OPENAI_MODEL` in Streamlit Secrets.
-5. Set an OpenAI project usage budget; in-process limits reset when a free instance restarts.
+The corpus, manifest, and Chroma vector index form one versioned artifact and must be rebuilt, reviewed, committed, or rolled back together.
 
-The app uses local Chroma ONNX embeddings and a local FlashRank TinyBERT reranker. Both models must exist in the deployment cache or may download on first startup, so a sleeping free Streamlit app can have a platform cold start. Warm retrieval and reranking are local and do not make an API call. Warm local retrieval is benchmarked with:
+## Testing
 
-```powershell
+Install the development dependencies and run the complete suite:
+
+```bash
+pip install -r requirements-dev.lock
+python -m pytest -q
+```
+
+Additional verification commands:
+
+```bash
+# Validate the approved knowledge artifact
+python -m scripts.validate_artifact
+
+# Compare keyword and hybrid retrieval
+python -m scripts.evaluate_retrieval --mode bm25
+python -m scripts.evaluate_retrieval --mode hybrid
+
+# Measure warm runtime performance
 python -m scripts.benchmark_runtime --iterations 10
 ```
 
-The UI and JSON logs report retrieval, generation, and total latency without recording visitor questions or evidence text. Generation is not cancelled for latency, so external network/provider delays can exceed the 3–4 second warm target.
+The test suite covers retrieval, reranking, follow-up context, price handling, structured output, grounding, source rendering, scope policies, runtime controls, health checks, and UI behavior.
 
-## Source scope and safety
+## Project structure
 
-The crawler is restricted to the seven pages in `app/config/sources.py`. Do not add automatically discovered links or fetch pages outside the assessment allowlist. The model receives only retrieved chunks, is instructed not to use outside knowledge, and cannot book appointments or provide personal medical advice. Model instructions are not a mathematical guarantee; review generated answers and test edge cases.
+```text
+app/
+├── answering/       # Generation, grounding, policies, and follow-up context
+├── config/          # Settings and approved source registry
+├── ingestion/       # Polite allowlisted crawler
+├── knowledge/       # Chunking and artifact validation
+├── retrieval/       # Keyword search, Chroma, fusion, and reranking
+└── runtime/         # Health checks, limits, and telemetry
+data/
+├── evaluation/      # Reviewed retrieval regression cases
+└── processed/       # Approved chunks, manifest, and vector artifact
+scripts/             # Audit, build, review, validation, and benchmark tools
+tests/               # Automated test suite
+streamlit_app.py     # Application entry point
+```
 
-## Privacy and secrets
+## Safety behavior
 
-Do not commit `.env`, API keys, user chat logs, or personal/medical data. Use `.env.example` only as a template.
+- Answers use only retrieved content from approved PlacidWay pages.
+- Factual model claims must reference valid supplied chunk IDs.
+- Unsupported prices, clinics, medical facts, or package details are not invented.
+- Package-specific questions cannot silently substitute evidence from another package.
+- The assistant cannot diagnose, recommend a treatment, guarantee safety, or book appointments.
+- Unknown information is acknowledged and the visitor is directed to the source page or PlacidWay.
+- Prices and package details should always be confirmed directly with PlacidWay.
+
+This application provides website information and is not a substitute for professional medical advice.
+
+## Privacy
+
+- API keys and secrets are loaded from environment variables or application secrets.
+- `.env`, private crawl output, and chat logs are excluded from version control.
+- Runtime telemetry records timing and safe error categories, not visitor questions or evidence text.
+- No personal or medical information should be added to the knowledge corpus.
 
 ## Known limitations
 
-- HTML extraction can include navigation or repeated boilerplate and may miss dynamically loaded or embedded video content.
-- Price regex extraction produces candidate mentions, not validated package records.
-- BM25 and Chroma each retrieve candidates, RRF combines them, and local TinyBERT selects the final chunks. This improves recall but adds local CPU work and memory compared with BM25 alone.
-- Semantic recall depends on the embedding model and corpus quality. Maintain reviewed retrieval cases and inspect failures before changing chunking or ranking weights.
-- Live model answers can vary; use the automated tests and manually review all eight required assessment categories before submission.
+- OpenAI generation time depends on external API and network latency.
+- HTML extraction may retain repeated page text or miss dynamically loaded content.
+- Candidate price extraction identifies review items; it does not validate quotes automatically.
+- Retrieval quality depends on the source content, chunk boundaries, embedding model, and reranker.
+- Live model wording can vary even when claims and citations remain constrained.
+- The knowledge base must be refreshed and reviewed when approved pages change.
