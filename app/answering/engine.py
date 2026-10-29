@@ -43,7 +43,7 @@ MEDICAL_ADVICE_TERMS = {
 }
 
 _GREETING_ONLY = re.compile(
-    r"^(?:(?:hi|hello|hey)(?:\s+(?:there|everyone|team))?"
+    r"^(?:(?:hi+|hello|helo|hlo|hey)(?:\s+(?:there|everyone|team))?"
     r"|good\s+(?:morning|afternoon|evening)(?:\s+(?:everyone|team))?"
     r"|how\s+are\s+you(?:\s+doing)?)$",
     re.IGNORECASE,

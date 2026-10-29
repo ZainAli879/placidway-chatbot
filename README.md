@@ -6,7 +6,7 @@
   **A source-grounded assistant for approved PlacidWay clinic and treatment-package information.**
 
   [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-  [![Streamlit](https://img.shields.io/badge/Streamlit-1.52-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
+  [![Streamlit](https://img.shields.io/badge/Streamlit-1.66-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
   [![Artifact](https://img.shields.io/badge/artifact-reviewed-16A34A)](#verification)
   [![Grounded RAG](https://img.shields.io/badge/RAG-hybrid%20retrieval-F05A55)](#architecture)
 </div>

@@ -21,6 +21,15 @@ jobs:
       - run: python -m compileall -q app scripts streamlit_app.py
       - run: python -m scripts.validate_artifact
       - run: python -m pip check
-      - run: pip-audit -r requirements.lock
+      # ChromaDB 1.5.9 is currently the newest release. These four advisories
+      # have no fixed version and affect its network server; this app only uses
+      # an in-process PersistentClient. Remove these exceptions when Chroma
+      # publishes a patched release.
+      - run: >-
+          pip-audit -r requirements.lock
+          --ignore-vuln PYSEC-2026-311
+          --ignore-vuln PYSEC-2026-3813
+          --ignore-vuln PYSEC-2026-3814
+          --ignore-vuln PYSEC-2026-3815
       - run: detect-secrets scan --all-files --exclude-files 'data/processed/chunks.jsonl' > .secrets.baseline
       - run: python -c "import json; d=json.load(open('.secrets.baseline')); assert not d.get('results'), d.get('results')"
