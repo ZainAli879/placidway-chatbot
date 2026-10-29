@@ -143,7 +143,7 @@ Set the required key in `.env`:
 ```dotenv
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL=gpt-4.1-mini
-ENABLE_GROUNDING_VALIDATION=true
+ENABLE_GROUNDING_VALIDATION=false
 ```
 
 Never commit `.env`, API keys, Streamlit secrets, or chat logs.
@@ -166,13 +166,13 @@ All supported settings are documented in `.env.example`.
 |---|---:|---|
 | `OPENAI_API_KEY` | — | Required for answer generation |
 | `OPENAI_MODEL` | `gpt-4.1-mini` | Model used for grounded synthesis |
-| `ENABLE_GROUNDING_VALIDATION` | `true` | Validates generated claims against evidence |
+| `ENABLE_GROUNDING_VALIDATION` | `false` | Optionally validates generated claims against evidence |
 | `MAX_EVIDENCE_CHUNKS` | `5` | Maximum chunks supplied to generation |
 | `MAX_EVIDENCE_CHARS` | `6000` | Maximum evidence characters per request |
 | `SESSION_REQUESTS` | `10` | Requests allowed per session window |
 | `SESSION_WINDOW_SECONDS` | `60` | Session rate-limit window |
-| `GENERATION_CONCURRENCY` | `2` | Concurrent generations per process |
-| `DAILY_GENERATION_LIMIT` | `500` | In-process daily generation limit |
+| `GENERATION_CONCURRENCY` | `2` | Concurrent AI calls; additional requests wait instead of failing |
+| `DAILY_GENERATION_LIMIT` | `500` | Daily in-process API cost guard |
 
 Knowledge paths can be configured using `KNOWLEDGE_INDEX_PATH`, `KNOWLEDGE_MANIFEST_PATH`, and `CHROMA_PERSIST_DIRECTORY`.
 

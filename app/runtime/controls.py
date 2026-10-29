@@ -2,10 +2,9 @@
 from __future__ import annotations
 
 from collections import deque
-from contextlib import contextmanager
 from datetime import datetime
 import threading
-from typing import Callable, Iterator, Sequence
+from typing import Callable, Sequence
 
 
 class SlidingWindowLimiter:
@@ -28,62 +27,40 @@ class SlidingWindowLimiter:
             return True, 0.0
 
 
-class GenerationGate:
-    def __init__(self, *, concurrency: int, daily_limit: int):
-        if concurrency < 1 or daily_limit < 1:
-            raise ValueError("concurrency and daily_limit must be positive")
-        self._semaphore = threading.BoundedSemaphore(concurrency)
-        self._daily_limit = daily_limit
-        self._day = None
-        self._calls_today = 0
-        self._lock = threading.Lock()
-
-    @property
-    def calls_today(self) -> int:
-        with self._lock:
-            return self._calls_today
-
-    @contextmanager
-    def try_acquire(self, now: datetime) -> Iterator[bool]:
-        acquired = self._semaphore.acquire(blocking=False)
-        if not acquired:
-            yield False
-            return
-        allowed = False
-        try:
-            day = now.astimezone().date()
-            with self._lock:
-                if day != self._day:
-                    self._day = day
-                    self._calls_today = 0
-                if self._calls_today < self._daily_limit:
-                    self._calls_today += 1
-                    allowed = True
-            yield allowed
-        finally:
-            self._semaphore.release()
-
-
 class GenerationUnavailable(RuntimeError):
-    """Generation was denied by an in-process concurrency or daily limit."""
+    """The configured daily generation allowance has been exhausted."""
 
 
-class ControlledGenerator:
+class ConcurrentGenerator:
+    """Queue concurrent calls and enforce the configured daily cost guard."""
+
     def __init__(
         self,
         delegate,
-        gate: GenerationGate,
-        *,
+        concurrency: int,
+        daily_limit: int,
         clock: Callable[[], datetime] | None = None,
     ):
+        if concurrency < 1 or daily_limit < 1:
+            raise ValueError("concurrency and daily_limit must be positive")
         self.delegate = delegate
-        self.gate = gate
-        self.clock = clock or (lambda: datetime.now().astimezone())
+        self._semaphore = threading.BoundedSemaphore(concurrency)
+        self._daily_limit = daily_limit
+        self._clock = clock or (lambda: datetime.now().astimezone())
+        self._day = None
+        self._calls_today = 0
+        self._counter_lock = threading.Lock()
 
     def generate(self, question, evidence, package_key=None):
-        with self.gate.try_acquire(self.clock()) as allowed:
-            if not allowed:
-                raise GenerationUnavailable("Generation capacity is currently unavailable")
+        with self._semaphore:
+            day = self._clock().astimezone().date()
+            with self._counter_lock:
+                if day != self._day:
+                    self._day = day
+                    self._calls_today = 0
+                if self._calls_today >= self._daily_limit:
+                    raise GenerationUnavailable("Daily generation allowance reached")
+                self._calls_today += 1
             return self.delegate.generate(question, evidence, package_key=package_key)
 
 

@@ -14,7 +14,7 @@ from app.answering.followup_context import resolve_followup_question
 from app.config.settings import Settings, SettingsError
 from app.retrieval.hybrid_search import HybridKnowledgeSearch
 from app.retrieval.reranker import FlashRankReranker
-from app.runtime.controls import ControlledGenerator, GenerationGate, SlidingWindowLimiter, trim_messages
+from app.runtime.controls import ConcurrentGenerator, SlidingWindowLimiter, trim_messages
 from app.runtime.health import check_health
 from app.runtime.telemetry import RuntimeEvent, emit_event
 
@@ -184,9 +184,10 @@ def load_engine(
                 max_evidence_chunks=max_evidence_chunks,
                 max_evidence_chars=max_evidence_chars,
             )
-            generator = ControlledGenerator(
+            generator = ConcurrentGenerator(
                 base,
-                GenerationGate(concurrency=generation_concurrency, daily_limit=daily_generation_limit),
+                generation_concurrency,
+                daily_generation_limit,
             )
         except Exception as exc:
             emit_event(RuntimeEvent.failure("generator_initialization", exc))

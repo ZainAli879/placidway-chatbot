@@ -91,7 +91,7 @@ class Settings:
             manifest_path=Path(_value("KNOWLEDGE_MANIFEST_PATH", environ, secrets, "data/processed/index_manifest.json")),
             chroma_persist_directory=Path(_value("CHROMA_PERSIST_DIRECTORY", environ, secrets, "data/processed/chroma")),
             grounding_validation_enabled=_boolean(
-                "ENABLE_GROUNDING_VALIDATION", environ, secrets, True
+                "ENABLE_GROUNDING_VALIDATION", environ, secrets, False
             ),
             max_question_chars=_integer("MAX_QUESTION_CHARS", environ, secrets, 1000, maximum=1000),
             max_evidence_chunks=_integer("MAX_EVIDENCE_CHUNKS", environ, secrets, 5, maximum=5),
