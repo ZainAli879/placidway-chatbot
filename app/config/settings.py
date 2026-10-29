@@ -70,7 +70,6 @@ class Settings:
     max_evidence_chars: int
     session_requests: int
     session_window_seconds: int
-    generation_concurrency: int
     daily_generation_limit: int
 
     @property
@@ -98,6 +97,5 @@ class Settings:
             max_evidence_chars=_integer("MAX_EVIDENCE_CHARS", environ, secrets, 6000, maximum=6000),
             session_requests=_integer("SESSION_REQUESTS", environ, secrets, 10),
             session_window_seconds=_integer("SESSION_WINDOW_SECONDS", environ, secrets, 60),
-            generation_concurrency=_integer("GENERATION_CONCURRENCY", environ, secrets, 2),
             daily_generation_limit=_integer("DAILY_GENERATION_LIMIT", environ, secrets, 500),
         )

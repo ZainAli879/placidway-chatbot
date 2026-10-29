@@ -171,7 +171,6 @@ All supported settings are documented in `.env.example`.
 | `MAX_EVIDENCE_CHARS` | `6000` | Maximum evidence characters per request |
 | `SESSION_REQUESTS` | `10` | Requests allowed per session window |
 | `SESSION_WINDOW_SECONDS` | `60` | Session rate-limit window |
-| `GENERATION_CONCURRENCY` | `2` | Concurrent AI calls; additional requests wait instead of failing |
 | `DAILY_GENERATION_LIMIT` | `500` | Daily in-process API cost guard |
 
 Knowledge paths can be configured using `KNOWLEDGE_INDEX_PATH`, `KNOWLEDGE_MANIFEST_PATH`, and `CHROMA_PERSIST_DIRECTORY`.

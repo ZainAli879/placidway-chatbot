@@ -31,20 +31,18 @@ class GenerationUnavailable(RuntimeError):
     """The configured daily generation allowance has been exhausted."""
 
 
-class ConcurrentGenerator:
-    """Queue concurrent calls and enforce the configured daily cost guard."""
+class DailyLimitedGenerator:
+    """Enforce the configured daily cost guard without limiting concurrency."""
 
     def __init__(
         self,
         delegate,
-        concurrency: int,
         daily_limit: int,
         clock: Callable[[], datetime] | None = None,
     ):
-        if concurrency < 1 or daily_limit < 1:
-            raise ValueError("concurrency and daily_limit must be positive")
+        if daily_limit < 1:
+            raise ValueError("daily_limit must be positive")
         self.delegate = delegate
-        self._semaphore = threading.BoundedSemaphore(concurrency)
         self._daily_limit = daily_limit
         self._clock = clock or (lambda: datetime.now().astimezone())
         self._day = None
@@ -52,16 +50,15 @@ class ConcurrentGenerator:
         self._counter_lock = threading.Lock()
 
     def generate(self, question, evidence, package_key=None):
-        with self._semaphore:
-            day = self._clock().astimezone().date()
-            with self._counter_lock:
-                if day != self._day:
-                    self._day = day
-                    self._calls_today = 0
-                if self._calls_today >= self._daily_limit:
-                    raise GenerationUnavailable("Daily generation allowance reached")
-                self._calls_today += 1
-            return self.delegate.generate(question, evidence, package_key=package_key)
+        day = self._clock().astimezone().date()
+        with self._counter_lock:
+            if day != self._day:
+                self._day = day
+                self._calls_today = 0
+            if self._calls_today >= self._daily_limit:
+                raise GenerationUnavailable("Daily generation allowance reached")
+            self._calls_today += 1
+        return self.delegate.generate(question, evidence, package_key=package_key)
 
 
 def trim_messages(messages: Sequence[dict], limit: int = 20) -> list[dict]:

@@ -14,7 +14,7 @@ from app.answering.followup_context import resolve_followup_question
 from app.config.settings import Settings, SettingsError
 from app.retrieval.hybrid_search import HybridKnowledgeSearch
 from app.retrieval.reranker import FlashRankReranker
-from app.runtime.controls import ConcurrentGenerator, SlidingWindowLimiter, trim_messages
+from app.runtime.controls import DailyLimitedGenerator, SlidingWindowLimiter, trim_messages
 from app.runtime.health import check_health
 from app.runtime.telemetry import RuntimeEvent, emit_event
 
@@ -162,7 +162,6 @@ def load_engine(
     modified_time: float,
     api_key_present: bool,
     model: str,
-    generation_concurrency: int,
     daily_generation_limit: int,
     grounding_validation_enabled: bool,
     max_evidence_chunks: int,
@@ -184,9 +183,8 @@ def load_engine(
                 max_evidence_chunks=max_evidence_chunks,
                 max_evidence_chars=max_evidence_chars,
             )
-            generator = ConcurrentGenerator(
+            generator = DailyLimitedGenerator(
                 base,
-                generation_concurrency,
                 daily_generation_limit,
             )
         except Exception as exc:
@@ -210,7 +208,6 @@ try:
         settings.index_path.stat().st_mtime,
         bool(api_key),
         model_name,
-        settings.generation_concurrency,
         settings.daily_generation_limit,
         settings.grounding_validation_enabled,
         settings.max_evidence_chunks,
