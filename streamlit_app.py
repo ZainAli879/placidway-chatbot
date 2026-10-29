@@ -131,7 +131,7 @@ st.markdown(
 
 logo_left, logo_center, logo_right = st.columns([1, 1.35, 1])
 with logo_center:
-    st.image("assets/placidway-logo.png", use_container_width=True)
+    st.image("assets/placidway-logo.png", width="stretch")
 
 st.markdown(
     """
@@ -226,7 +226,7 @@ with st.sidebar:
     else:
         st.warning("Answer generation is temporarily unavailable.")
     st.caption("Website information can change. Always confirm important details with PlacidWay.")
-    if st.button("Start new conversation", use_container_width=True):
+    if st.button("Start new conversation", width="stretch"):
         st.session_state.messages = []
         st.session_state.active_treatment_context = None
         st.session_state.last_assistant_answer = None
@@ -254,7 +254,7 @@ if not st.session_state.messages:
     cols = st.columns(2)
     for index, example in enumerate(examples):
         with cols[index % 2]:
-            if st.button(example, key=f"example_{index}", use_container_width=True):
+            if st.button(example, key=f"example_{index}", width="stretch"):
                 st.session_state.pending_question = example
 
 for message in st.session_state.messages:

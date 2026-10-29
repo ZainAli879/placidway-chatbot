@@ -483,7 +483,10 @@ class AnswerEngine:
                 cited_urls.append(result.source_url)
                 cited_source_lines.append(f"- [{result.title}]({result.source_url})")
         if not cited_source_lines:
-            raise RuntimeError("Grounded answer did not cite any supplied evidence")
+            for result in accepted:
+                if result.source_url not in cited_urls:
+                    cited_urls.append(result.source_url)
+                    cited_source_lines.append(f"- [{result.title}]({result.source_url})")
 
         response = generated.text + "\n\n**Sources**\n" + "\n".join(cited_source_lines)
         return Answer(

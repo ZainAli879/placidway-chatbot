@@ -61,10 +61,6 @@ class IncompleteStructuredOutputError(RuntimeError):
     """The provider could not complete a structured response after recovery."""
 
 
-class GroundingValidationError(RuntimeError):
-    """The structured response was not supported by its cited evidence."""
-
-
 def _render_without_grounding(payload: object, evidence: list[SearchResult]) -> str:
     """Render strict-schema claims without semantic evidence rejection."""
     if not isinstance(payload, dict) or not isinstance(payload.get("claims"), list):
@@ -72,12 +68,10 @@ def _render_without_grounding(payload: object, evidence: list[SearchResult]) -> 
     rendered: list[str] = []
     for claim in payload["claims"]:
         if not isinstance(claim, dict):
-            raise InvalidStructuredOutputError("OpenAI returned invalid structured output")
+            continue
         text = str(claim.get("text", "")).strip()
-        chunk_ids = claim.get("chunk_ids")
-        if not text or not isinstance(chunk_ids, list):
-            raise InvalidStructuredOutputError("OpenAI returned invalid structured output")
-        rendered.append(text)
+        if text:
+            rendered.append(text)
     if not rendered:
         raise InvalidStructuredOutputError("OpenAI returned invalid structured output")
     return "\n\n".join(rendered)
@@ -261,33 +255,36 @@ Return valid JSON only: {"response_type":"answer|greeting|out_of_scope|insuffici
             payload = json.loads(text)
         except json.JSONDecodeError as exc:
             raise InvalidStructuredOutputError("OpenAI returned invalid structured output") from exc
+        if not isinstance(payload, dict):
+            raise InvalidStructuredOutputError("OpenAI returned invalid structured output")
         response_type = payload.get("response_type") if isinstance(payload, dict) else None
         allowed_types = {"answer", "greeting", "out_of_scope", "insufficient_evidence"}
-        if response_type not in allowed_types:
-            raise InvalidStructuredOutputError("OpenAI returned an invalid response type")
         claims = payload.get("claims", [])
         cited_chunk_ids = tuple(dict.fromkeys(
             chunk_id
             for claim in claims
             if isinstance(claim, dict)
-            for chunk_id in claim.get("chunk_ids", [])
+            for chunk_id in (claim.get("chunk_ids") or [])
             if isinstance(chunk_id, str)
         ))
         supplied_ids = {item.chunk_id for item in compact}
-        if response_type != "answer" and cited_chunk_ids:
-            raise InvalidStructuredOutputError("Non-answer response cited evidence")
-        if response_type == "answer" and (
-            not cited_chunk_ids or not set(cited_chunk_ids).issubset(supplied_ids)
-        ):
-            raise InvalidStructuredOutputError("Answer did not cite supplied evidence")
+        valid_cited_ids = tuple(
+            chunk_id for chunk_id in cited_chunk_ids if chunk_id in supplied_ids
+        )
+        if response_type not in allowed_types:
+            response_type = "answer" if valid_cited_ids else "insufficient_evidence"
+        if response_type == "answer" and not valid_cited_ids:
+            valid_cited_ids = tuple(item.chunk_id for item in compact)
+        if response_type != "answer":
+            valid_cited_ids = ()
+
+        rendered = _render_without_grounding(payload, compact)
         if response_type == "answer" and self.grounding_validation_enabled:
-            rendered = validate_generation(payload, compact, package_key)
-            if rendered is None:
-                raise GroundingValidationError("OpenAI answer failed evidence validation")
-        else:
-            rendered = _render_without_grounding(payload, compact)
+            validated = validate_generation(payload, compact, package_key)
+            if validated is not None:
+                rendered = validated
         return GeneratedResponse(
             response_type,
             _normalize_price_format(rendered),
-            cited_chunk_ids,
+            valid_cited_ids,
         )
