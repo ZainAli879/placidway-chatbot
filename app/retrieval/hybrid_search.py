@@ -1,11 +1,11 @@
 """Hybrid BM25 and Chroma retrieval combined with reciprocal-rank fusion."""
 from __future__ import annotations
 
-import hashlib
 import json
 from pathlib import Path
 from typing import Iterable
 
+from app.knowledge.artifact import corpus_digest
 from app.retrieval.search import KnowledgeSearch, SearchResult
 
 DEFAULT_COLLECTION_NAME = "placidway_chunks"
@@ -22,7 +22,7 @@ def _read_corpus(corpus_path: str | Path) -> tuple[Path, list[dict], str]:
         rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
     except (OSError, json.JSONDecodeError) as exc:
         raise VectorArtifactError(f"Vector corpus cannot be loaded: {exc.__class__.__name__}") from exc
-    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    digest = corpus_digest(path)
     return path, rows, digest
 
 

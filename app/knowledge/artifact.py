@@ -27,8 +27,10 @@ class ArtifactMetadata:
     reviewed_at_utc: str
 
 
-def _digest(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+def corpus_digest(path: Path) -> str:
+    """Hash JSONL content using canonical LF line endings across platforms."""
+    canonical_bytes = path.read_bytes().replace(b"\r\n", b"\n")
+    return hashlib.sha256(canonical_bytes).hexdigest()
 
 
 def _read_rows(path: Path) -> list[dict]:
@@ -62,7 +64,7 @@ def build_manifest(corpus_path: Path, chunks: Sequence[dict], *, built_at_utc: s
     return {
         "schema_version": SCHEMA_VERSION,
         "built_at_utc": built_at_utc or datetime.now().astimezone().isoformat(),
-        "corpus_sha256": _digest(corpus_path),
+        "corpus_sha256": corpus_digest(corpus_path),
         "source_ids": list(sources),
         "source_count": len(sources),
         "chunk_count": len(chunks),
@@ -99,7 +101,7 @@ def validate_artifact(corpus_path: Path, manifest_path: Path) -> ArtifactMetadat
         raise ArtifactError(f"Knowledge manifest is not valid JSON: {exc.__class__.__name__}") from exc
     if manifest.get("schema_version") != SCHEMA_VERSION:
         raise ArtifactError("Knowledge manifest schema version is unsupported")
-    if manifest.get("corpus_sha256") != _digest(corpus_path):
+    if manifest.get("corpus_sha256") != corpus_digest(corpus_path):
         raise ArtifactError("Knowledge corpus digest does not match its reviewed manifest")
     if manifest.get("source_ids") != list(sources) or manifest.get("source_count") != len(sources):
         raise ArtifactError("Knowledge manifest source metadata does not match the corpus")

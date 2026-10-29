@@ -88,6 +88,16 @@ def test_rebuild_manifest_is_always_unreviewed(tmp_path):
     assert manifest["review_status"] == "pending"
 
 
+def test_corpus_digest_is_stable_across_platform_line_endings(tmp_path):
+    corpus = tmp_path / "chunks.jsonl"
+    rows = _write_corpus(corpus)
+    lf_digest = build_manifest(corpus, rows)["corpus_sha256"]
+
+    corpus.write_bytes(corpus.read_bytes().replace(b"\n", b"\r\n"))
+
+    assert build_manifest(corpus, rows)["corpus_sha256"] == lf_digest
+
+
 def test_artifact_rejects_malformed_jsonl(tmp_path):
     corpus = tmp_path / "chunks.jsonl"
     manifest = tmp_path / "manifest.json"

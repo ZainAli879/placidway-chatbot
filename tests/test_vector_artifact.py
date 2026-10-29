@@ -1,4 +1,3 @@
-import hashlib
 import json
 
 import pytest
@@ -10,6 +9,7 @@ from app.retrieval.hybrid_search import (
     build_vector_index,
     validate_vector_collection,
 )
+from app.knowledge.artifact import corpus_digest
 
 
 def write_corpus(path):
@@ -45,7 +45,7 @@ class FakeCollection:
 def test_vector_collection_accepts_exact_corpus_digest_ids_and_model(tmp_path):
     corpus = tmp_path / "chunks.jsonl"
     rows = write_corpus(corpus)
-    digest = hashlib.sha256(corpus.read_bytes()).hexdigest()
+    digest = corpus_digest(corpus)
     collection = FakeCollection({
         "corpus_sha256": digest,
         "embedding_model": DEFAULT_EMBEDDING_MODEL,
@@ -63,7 +63,7 @@ def test_vector_collection_accepts_exact_corpus_digest_ids_and_model(tmp_path):
 def test_vector_collection_rejects_stale_metadata(tmp_path, field, value):
     corpus = tmp_path / "chunks.jsonl"
     rows = write_corpus(corpus)
-    digest = hashlib.sha256(corpus.read_bytes()).hexdigest()
+    digest = corpus_digest(corpus)
     metadata = {
         "corpus_sha256": digest,
         "embedding_model": DEFAULT_EMBEDDING_MODEL,
@@ -78,7 +78,7 @@ def test_vector_collection_rejects_stale_metadata(tmp_path, field, value):
 def test_vector_collection_rejects_mismatched_chunk_ids(tmp_path):
     corpus = tmp_path / "chunks.jsonl"
     rows = write_corpus(corpus)
-    digest = hashlib.sha256(corpus.read_bytes()).hexdigest()
+    digest = corpus_digest(corpus)
     collection = FakeCollection({
         "corpus_sha256": digest,
         "embedding_model": DEFAULT_EMBEDDING_MODEL,
@@ -111,4 +111,24 @@ def test_offline_builder_recreates_and_populates_collection(tmp_path):
     assert client.deleted == [DEFAULT_COLLECTION_NAME]
     assert collection.upserted["ids"] == ["c1"]
     assert collection.upserted["documents"] == ["Title\n\nDocument text"]
-    assert collection.metadata["corpus_sha256"] == hashlib.sha256(corpus.read_bytes()).hexdigest()
+    assert collection.metadata["corpus_sha256"] == corpus_digest(corpus)
+
+
+def test_vector_digest_is_stable_across_platform_line_endings(tmp_path):
+    lf_corpus = tmp_path / "lf.jsonl"
+    crlf_corpus = tmp_path / "crlf.jsonl"
+    write_corpus(lf_corpus)
+    lf_corpus.write_bytes(lf_corpus.read_bytes().replace(b"\r\n", b"\n"))
+    crlf_corpus.write_bytes(lf_corpus.read_bytes().replace(b"\n", b"\r\n"))
+
+    class FakeClient:
+        def delete_collection(self, name):
+            pass
+
+        def get_or_create_collection(self, **kwargs):
+            return FakeCollection(kwargs["metadata"], ids=())
+
+    lf_collection = build_vector_index(lf_corpus, client=FakeClient(), embedding_function=object())
+    crlf_collection = build_vector_index(crlf_corpus, client=FakeClient(), embedding_function=object())
+
+    assert crlf_collection.metadata["corpus_sha256"] == lf_collection.metadata["corpus_sha256"]
