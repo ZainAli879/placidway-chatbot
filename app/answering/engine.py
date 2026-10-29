@@ -423,19 +423,22 @@ class AnswerEngine:
             )
 
         unique_urls: list[str] = []
-        source_lines: list[str] = []
         for result in accepted:
             if result.source_url not in unique_urls:
                 unique_urls.append(result.source_url)
-                source_lines.append(f"- [{result.title}]({result.source_url})")
 
         if self.generator is not None:
             generation_started = time.perf_counter()
             try:
-                response = self.generator.generate(
+                generated = self.generator.generate(
                     query, accepted, package_key=package_source
                 )
-                reason = "grounded_llm_answer"
+                reason = {
+                    "answer": "grounded_llm_answer",
+                    "greeting": "llm_greeting",
+                    "out_of_scope": "llm_out_of_scope",
+                    "insufficient_evidence": "llm_insufficient_evidence",
+                }[generated.response_type]
             except Exception as exc:
                 generation_ms = (time.perf_counter() - generation_started) * 1000
                 return Answer(
@@ -458,10 +461,34 @@ class AnswerEngine:
                 exception_class="GeneratorNotConfiguredError",
             )
 
-        response += "\n\n**Sources**\n" + "\n".join(source_lines)
+        if generated.response_type != "answer":
+            return Answer(
+                generated.text,
+                (),
+                generated.response_type != "greeting",
+                reason,
+                tuple(accepted),
+                latency_ms=(time.perf_counter() - request_started) * 1000,
+                retrieval_ms=retrieval_ms,
+                generation_ms=generation_ms,
+                response_mode=reason,
+            )
+
+        cited_ids = set(generated.cited_chunk_ids)
+        cited_results = [item for item in accepted if item.chunk_id in cited_ids]
+        cited_urls: list[str] = []
+        cited_source_lines: list[str] = []
+        for result in cited_results:
+            if result.source_url not in cited_urls:
+                cited_urls.append(result.source_url)
+                cited_source_lines.append(f"- [{result.title}]({result.source_url})")
+        if not cited_source_lines:
+            raise RuntimeError("Grounded answer did not cite any supplied evidence")
+
+        response = generated.text + "\n\n**Sources**\n" + "\n".join(cited_source_lines)
         return Answer(
             response,
-            tuple(unique_urls),
+            tuple(cited_urls),
             False,
             reason,
             tuple(accepted),
