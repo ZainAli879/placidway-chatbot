@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -r requirements-dev.lock
+      - run: python -m pytest -q
+      - run: python -m compileall -q app scripts streamlit_app.py
+      - run: python -m scripts.validate_artifact
+      - run: python -m pip check
+      - run: pip-audit -r requirements.lock
+      - run: detect-secrets scan --all-files --exclude-files 'data/processed/chunks.jsonl' > .secrets.baseline
+      - run: python -c "import json; d=json.load(open('.secrets.baseline')); assert not d.get('results'), d.get('results')"

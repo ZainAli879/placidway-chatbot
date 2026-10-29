@@ -205,6 +205,14 @@ cython_debug/
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
 
+# Superpowers execution ledgers and review artifacts
+.superpowers/
+
+# Generated/private crawl and heavyweight local vector state
+data/raw/*.txt
+data/source_audit.json
+data/processed/price_mentions_review.jsonl
+
 # Ruff stuff:
 .ruff_cache/
 

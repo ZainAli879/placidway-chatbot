@@ -1,0 +1,22 @@
+[
+  {
+    "query": "What is the alternative medicine price range shown on the comparison page?",
+    "relevant_chunk_ids": ["alternative-medicine-price-comparison-53241392271fba40"]
+  },
+  {
+    "query": "What does the outpatient package include, according to the adrenal cancer page?",
+    "relevant_chunk_ids": ["adrenal-cancer-package-1339cd88878b0129"]
+  },
+  {
+    "query": "What is the listed price and duration for the anal cancer outpatient package?",
+    "relevant_chunk_ids": ["anal-cancer-package-15c0affa45a4ccbf"]
+  },
+  {
+    "query": "Why does the adenocarcinoma treatment last three weeks?",
+    "relevant_chunk_ids": ["adenocarcinoma-package-969734a55343de31"]
+  },
+  {
+    "query": "What kind of videos are listed for the ITC clinic?",
+    "relevant_chunk_ids": ["itc-clinic-profile-747ada7cbacbc5b2"]
+  }
+]

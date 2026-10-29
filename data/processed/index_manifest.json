@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "built_at_utc": "2026-10-28T21:59:32.641111+05:00",
+  "corpus_sha256": "b5b073eca7cea602a490276e1be11465d11623fd6d64a9f440084046213d5be7",
+  "source_ids": [
+    "adenocarcinoma-package",
+    "adrenal-cancer-package",
+    "alternative-medicine-price-comparison",
+    "anal-cancer-package",
+    "itc-clinic-profile",
+    "itc-clinic-videos",
+    "itc-price-list"
+  ],
+  "source_count": 7,
+  "chunk_count": 103,
+  "review_status": "approved",
+  "reviewed_by": "Zain",
+  "reviewed_at_utc": "2026-10-28T16:59:32.638039+00:00"
+}
