@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from app.config.settings import Settings, SettingsError
@@ -68,5 +70,5 @@ def test_settings_use_production_defaults():
     assert settings.session_window_seconds == 60
     assert settings.generation_concurrency == 2
     assert settings.daily_generation_limit == 500
-    assert str(settings.chroma_persist_directory) == "data\\processed\\chroma"
+    assert settings.chroma_persist_directory == Path("data/processed/chroma")
     assert settings.grounding_validation_enabled is True
