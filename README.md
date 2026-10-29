@@ -7,7 +7,7 @@
 
   [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
   [![Streamlit](https://img.shields.io/badge/Streamlit-1.52-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io/)
-  [![Tests](https://img.shields.io/badge/tests-154%20passing-16A34A)](#testing)
+  [![Artifact](https://img.shields.io/badge/artifact-reviewed-16A34A)](#verification)
   [![Grounded RAG](https://img.shields.io/badge/RAG-hybrid%20retrieval-F05A55)](#architecture)
 </div>
 
@@ -30,7 +30,7 @@ The system prioritizes accuracy and honesty. It retrieves relevant website evide
 - Safe responses for booking, weather, and personal medical-advice requests
 - Reviewed and integrity-checked knowledge artifacts
 - Responsive PlacidWay-branded chat interface
-- Automated retrieval, grounding, safety, and UI tests
+- Startup health checks and reviewed-artifact validation
 
 ## Architecture
 
@@ -75,7 +75,7 @@ Document embeddings and reranking run locally. OpenAI receives the visitor quest
 | Rank fusion | Reciprocal-rank fusion | Combines independent retrieval rankings |
 | Reranking | FlashRank TinyBERT | Selects the strongest final evidence |
 | Crawling | Requests + Beautiful Soup + lxml | Polite extraction from approved pages |
-| Quality checks | pytest | Unit, integration, retrieval, and safety testing |
+| Quality checks | Artifact validation and retrieval evaluation | Corpus integrity and retrieval-quality checks |
 
 ## Knowledge scope
 
@@ -203,18 +203,20 @@ Before approval, manually review:
 
 The corpus, manifest, and Chroma vector index form one versioned artifact and must be rebuilt, reviewed, committed, or rolled back together.
 
-## Testing
+## Verification
 
-Install the development dependencies and run the complete suite:
+Install the verification dependencies:
 
 ```bash
 pip install -r requirements-dev.lock
-python -m pytest -q
 ```
 
-Additional verification commands:
+Run the production verification commands:
 
 ```bash
+# Compile application and maintenance modules
+python -m compileall -q app scripts streamlit_app.py
+
 # Validate the approved knowledge artifact
 python -m scripts.validate_artifact
 
@@ -224,9 +226,13 @@ python -m scripts.evaluate_retrieval --mode hybrid
 
 # Measure warm runtime performance
 python -m scripts.benchmark_runtime --iterations 10
+
+# Check installed dependency consistency and known vulnerabilities
+python -m pip check
+pip-audit -r requirements.lock
 ```
 
-The test suite covers retrieval, reranking, follow-up context, price handling, structured output, grounding, source rendering, scope policies, runtime controls, health checks, and UI behavior.
+GitHub Actions runs compilation, artifact validation, dependency consistency, vulnerability auditing, and secret scanning on every push and pull request.
 
 ## Project structure
 
@@ -242,7 +248,6 @@ data/
 ├── evaluation/      # Reviewed retrieval regression cases
 └── processed/       # Approved chunks, manifest, and vector artifact
 scripts/             # Audit, build, review, validation, and benchmark tools
-tests/               # Automated test suite
 streamlit_app.py     # Application entry point
 ```
 
