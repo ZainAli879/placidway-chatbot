@@ -78,12 +78,9 @@ def _render_without_grounding(payload: object, evidence: list[SearchResult]) -> 
 
 
 def _normalize_price_format(text: str) -> str:
-    """Remove malformed inline-code delimiters while preserving plain-text prices."""
-    # A stray opening backtick can make Markdown render the rest of a paragraph
-    # as code. Keep the amount and any stated currency, but never add a currency
-    # symbol/code that the model output did not provide.
-    pattern = re.compile(
-        r"`\s*(?P<amount>\d[\d,]*(?:\.\d{1,2})?)"
+    """Render prices with currency codes so Markdown cannot treat them as math."""
+    inline_code_price = re.compile(
+        r"`\s*(?P<amount>(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)"
         r"\s*(?P<currency>USD|US dollars)?",
         re.IGNORECASE,
     )
@@ -93,8 +90,30 @@ def _normalize_price_format(text: str) -> str:
         currency = match.group("currency")
         return f"{amount} {currency}" if currency else amount
 
-    normalized = pattern.sub(replace_price, text)
-    return normalized.replace("`", "")
+    normalized = inline_code_price.sub(replace_price, text).replace("`", "")
+    symbol_price = re.compile(
+        r"(?P<symbol>[$€£₹₨¥])\s*"
+        r"(?P<amount>(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)"
+        r"(?:\s*(?P<currency>USD|US dollars|EUR|GBP|INR|PKR|JPY))?",
+        re.IGNORECASE,
+    )
+    symbol_codes = {
+        "$": "USD",
+        "€": "EUR",
+        "£": "GBP",
+        "₹": "INR",
+        "₨": "PKR",
+        "¥": "JPY",
+    }
+
+    def replace_symbol_price(match: re.Match) -> str:
+        currency = match.group("currency")
+        if currency and currency.casefold() == "us dollars":
+            currency = "USD"
+        code = currency.upper() if currency else symbol_codes[match.group("symbol")]
+        return f"{match.group('amount')} {code}"
+
+    return symbol_price.sub(replace_symbol_price, normalized)
 
 def _remove_unsupported_prices(text: str, evidence_text: str) -> str:
     """Remove answer lines containing monetary amounts absent from supplied evidence.
