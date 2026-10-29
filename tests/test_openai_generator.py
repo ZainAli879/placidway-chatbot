@@ -100,6 +100,10 @@ def test_prompt_handles_price_comparisons_and_page_types_without_inventing_conte
             assert "Do not omit a relevant requested fact" in instructions
             assert "Answer only the details the visitor requested" in instructions
             assert "combine related list items into one claim" in instructions
+            assert "Use a short opening sentence followed by Markdown bullets" in instructions
+            assert "simple one-fact answer as a concise paragraph" in instructions
+            assert "Never drop supported prices, durations, qualifiers, exceptions" in instructions
+            assert "Do not repeat the same fact or source title" in instructions
             assert "three health-focused meals" not in instructions
             assert kwargs["max_output_tokens"] == 250
             assert kwargs["text"]["format"]["type"] == "json_schema"
