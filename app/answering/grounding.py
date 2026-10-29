@@ -166,10 +166,5 @@ def validate_generation(payload: object, evidence: Sequence[SearchResult], packa
         evidence_text = " ".join(item.text for item in cited_results)
         if not _amounts(text).issubset(_amounts(evidence_text)) or not _supported(text, evidence_text):
             return None
-        links: list[str] = []
-        for item in cited_results:
-            link = f"[{item.title}]({item.source_url})"
-            if link not in links:
-                links.append(link)
-        rendered.append(f"{text} ({'; '.join(links)})")
+        rendered.append(text)
     return "\n\n".join(rendered) if rendered else None

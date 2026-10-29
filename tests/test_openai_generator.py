@@ -117,7 +117,7 @@ def test_prompt_handles_price_comparisons_and_page_types_without_inventing_conte
     generator = OpenAIAnswerGenerator(api_key="fake-key", model="test-model", client=Client())
     answer = generator.generate("Compare these two listed prices.", [result("base", "Price: 18,995 USD.")])
     assert "18,995 USD" in answer
-    assert "https://example.com/package" in answer
+    assert "https://example.com/package" not in answer
 
 
 def test_generator_caps_chunks_and_evidence_characters():
@@ -186,7 +186,7 @@ def test_grounding_rejection_has_distinct_failure_type():
         )
 
 
-def test_grounding_validation_can_be_explicitly_disabled_but_sources_still_render():
+def test_grounding_validation_can_be_explicitly_disabled_without_inline_sources():
     output = json.dumps({
         "claims": [{"text": "The unsupported price is 99,999 USD.", "chunk_ids": ["c0"]}]
     })
@@ -196,7 +196,7 @@ def test_grounding_validation_can_be_explicitly_disabled_but_sources_still_rende
     )
 
     assert "99,999 USD" in answer
-    assert "https://example.com/package" in answer
+    assert "https://example.com/package" not in answer
 
 
 def test_grounding_validation_is_enabled_by_default():

@@ -42,3 +42,23 @@
 - [ ] Run the targeted test and full suite.
 - [ ] Commit and publish the verified change.
 
+### Task 2: Professional source presentation
+
+**Files:**
+- Modify: `app/answering/grounding.py`
+- Modify: `app/answering/openai_generator.py`
+- Modify: `app/answering/engine.py`
+- Test: `tests/test_grounding.py`
+- Test: `tests/test_openai_generator.py`
+- Test: `tests/test_answer_engine.py`
+
+**Interfaces:**
+- Consumes: validated claim text and trusted `SearchResult` source metadata
+- Produces: clean answer body followed by one deduplicated Markdown source list
+
+- [ ] Add failing tests for clean claim text, titled source links, deduplication, and removal of the repeated disclaimer.
+- [ ] Remove inline links while preserving chunk-ID validation.
+- [ ] Render trusted source titles as Markdown links once in the engine.
+- [ ] Run targeted tests and the complete suite.
+- [ ] Commit and publish the verified change.
+

@@ -14,7 +14,7 @@ def evidence(chunk_id="pkg-1", source_id="adenocarcinoma-package", text="The pac
     )
 
 
-def test_valid_generation_renders_claim_level_source_link():
+def test_valid_generation_returns_clean_claim_text_after_validating_chunk_ids():
     rendered = validate_generation(
         {"claims": [{"text": "The outpatient price listed is 18,995 USD.", "chunk_ids": ["pkg-1"]}]},
         [evidence()],
@@ -23,7 +23,8 @@ def test_valid_generation_renders_claim_level_source_link():
 
     assert rendered is not None
     assert "18,995 USD" in rendered
-    assert "[Package](https://www.placidway.com/package/example)" in rendered
+    assert "https://" not in rendered
+    assert "[Package]" not in rendered
 
 
 def test_factual_claim_without_citation_is_rejected():

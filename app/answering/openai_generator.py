@@ -55,7 +55,6 @@ def _render_without_grounding(payload: object, evidence: list[SearchResult]) -> 
     """Render strict-schema claims without semantic evidence rejection."""
     if not isinstance(payload, dict) or not isinstance(payload.get("claims"), list):
         raise InvalidStructuredOutputError("OpenAI returned invalid structured output")
-    by_id = {item.chunk_id: item for item in evidence}
     rendered: list[str] = []
     for claim in payload["claims"]:
         if not isinstance(claim, dict):
@@ -64,14 +63,7 @@ def _render_without_grounding(payload: object, evidence: list[SearchResult]) -> 
         chunk_ids = claim.get("chunk_ids")
         if not text or not isinstance(chunk_ids, list):
             raise InvalidStructuredOutputError("OpenAI returned invalid structured output")
-        links: list[str] = []
-        for chunk_id in chunk_ids:
-            item = by_id.get(chunk_id) if isinstance(chunk_id, str) else None
-            if item is not None:
-                link = f"[{item.title}]({item.source_url})"
-                if link not in links:
-                    links.append(link)
-        rendered.append(f"{text} ({'; '.join(links)})" if links else text)
+        rendered.append(text)
     if not rendered:
         raise InvalidStructuredOutputError("OpenAI returned invalid structured output")
     return "\n\n".join(rendered)

@@ -427,7 +427,7 @@ class AnswerEngine:
         for result in accepted:
             if result.source_url not in unique_urls:
                 unique_urls.append(result.source_url)
-                source_lines.append(f"- {result.title} — {result.source_url}")
+                source_lines.append(f"- [{result.title}]({result.source_url})")
 
         if self.generator is not None:
             generation_started = time.perf_counter()
@@ -459,7 +459,6 @@ class AnswerEngine:
             )
 
         response += "\n\n**Sources**\n" + "\n".join(source_lines)
-        response += "\n\nThis is website information, not medical advice. Confirm prices and package details directly with PlacidWay."
         return Answer(
             response,
             tuple(unique_urls),

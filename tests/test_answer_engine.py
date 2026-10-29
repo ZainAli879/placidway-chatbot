@@ -36,7 +36,11 @@ class GroundedStubGenerator:
 def test_supported_question_returns_source():
     answer = make_engine(GroundedStubGenerator()).answer("How long is the adenocarcinoma outpatient program?")
     assert not answer.abstained
-    assert "https://www.placidway.com/package/7903/example" in answer.text
+    source_url = "https://www.placidway.com/package/7903/example"
+    assert f"- [Adenocarcinoma cancer treatment package]({source_url})" in answer.text
+    assert answer.text.count(source_url) == 1
+    assert "Adenocarcinoma cancer treatment package —" not in answer.text
+    assert "This is website information, not medical advice" not in answer.text
 
 
 def test_supported_answer_reports_stage_latency_and_mode():
